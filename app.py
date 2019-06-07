@@ -1,0 +1,159 @@
+import glob
+import io
+import os
+import shutil
+import threading
+import time
+import uuid
+import numpy as np
+
+import face_recognition
+import requests
+from flask import Flask, request
+from flask_restful import Resource, Api
+from PIL import Image
+
+app = Flask(__name__)
+api = Api(app)
+
+
+class FaceCompareAPI(Resource):
+	def post(self):
+		process_id = uuid.uuid4()
+
+		data = request.get_json(force=True)
+
+		total_img_src = len(data['src'])
+		print('Total img src: ' + str(total_img_src))
+		total_img_des = len(data['des'])
+		print('Total img des: ' + str(total_img_des))
+
+		process_directory = 'images/' + str(process_id)
+		if not os.path.exists(process_directory):
+			os.makedirs(process_directory)
+
+		src_directory = process_directory + '/src'
+		os.makedirs(src_directory)
+
+		des_directory = process_directory + '/des'
+		os.makedirs(des_directory)
+
+		# for i in range(6):
+		# 	t = threading.Thread(target=fetch_url_src, args=(data['src'], src_directory))
+		# 	t.start()
+
+		fetch_url_src(data['src'], src_directory)
+
+		# for i in range(6):
+		# 	t = threading.Thread(target=fetch_url_des, args=(data['des'], des_directory))
+		# 	t.start()
+		fetch_url_des(data['des'], des_directory)
+
+		src_files = glob.glob("{}/*.jpg".format(src_directory))
+		src_files.extend(glob.glob("{}/*.jpeg".format(src_directory)))
+		src_files.extend(glob.glob("{}/*.png)".format(src_directory)))
+		src_files.extend(glob.glob("{}/*.gif)".format(src_directory)))
+
+		src_file_url = []
+		for src_file in src_files:
+			src_file_url.append(src_file)
+
+		des_files = glob.glob("{}/*.jpg".format(des_directory))
+		des_files.extend(glob.glob("{}/*.jpeg".format(des_directory)))
+		des_files.extend(glob.glob("{}/*.png".format(des_directory)))
+		des_files.extend(glob.glob("{}/*.gif".format(des_directory)))
+		des_file_url = []
+		for des_file in des_files:
+			des_file_url.append(des_file)
+
+		data = process_face_recognition(src_file_url, des_file_url)
+
+		shutil.rmtree(process_directory)
+
+		return data, 200
+
+
+api.add_resource(FaceCompareAPI, '/face-compare', endpoint='face-compare')
+
+
+def download_image(out_dir, img_url):
+	filename = img_url.split('/')[-1].split("?")[0]
+	image_file_path = os.path.join(out_dir, filename)
+
+	r = requests.get(img_url, timeout=4.0)
+	if r.status_code != requests.codes.ok:
+		assert False, 'Status code error: {}.'.format(r.status_code)
+
+	with Image.open(io.BytesIO(r.content)) as im:
+		im.save(image_file_path)
+
+	print('Image downloaded from url: {} and saved to: {}.'.format(img_url, image_file_path))
+
+
+def fetch_url_src(uris, path):
+	for uri in uris:
+		download_image(path, uri)
+		if not os.path.exists(path):
+			r = requests.get(uri, stream=True)
+			if r.status_code == 200:
+				with open(path, 'wb') as f:
+					for chunk in r:
+						f.write(chunk)
+
+
+def fetch_url_des(uris, path):
+	for uri in uris:
+		download_image(path, uri)
+		if not os.path.exists(path):
+			r = requests.get(uri, stream=True)
+			if r.status_code == 200:
+				with open(path, 'wb') as f:
+					for chunk in r:
+						f.write(chunk)
+
+
+def process_face_recognition(src_urls, des_urls):
+	result = {
+		'status': False,
+		'matched_faces': None
+	}
+	matched_faces = []
+	for src_url in src_urls:
+		for des_url in des_urls:
+			known_image = face_recognition.load_image_file(src_url)
+			unknown_image = face_recognition.load_image_file(des_url)
+
+			face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0, model="cnn")
+			known_image_encoding = face_recognition.face_encodings(known_image, face_locations)
+			if len(known_image_encoding) == 0:
+				continue
+
+			known_image_encoding = known_image_encoding[0]
+
+			unknown_face_locations = face_recognition.face_locations(unknown_image, number_of_times_to_upsample=0,
+			                                                         model="cnn")
+			unknown_face_encodings = face_recognition.face_encodings(unknown_image, unknown_face_locations)
+			if len(unknown_face_encodings) == 0:
+				continue
+
+			unknown_face_encodings = unknown_face_encodings[0]
+
+			results_compare_faces = face_recognition.compare_faces([known_image_encoding], unknown_face_encodings)[0]
+			results_face_distance = face_recognition.face_distance([known_image_encoding], unknown_face_encodings)[0]
+			matched_faces.append(results_face_distance)
+
+			results_compare_faces = isinstance(results_compare_faces, np.bool_)
+
+			if results_compare_faces is True:
+				matched_faces.sort()
+				result['status'] = results_compare_faces
+				result['matched_faces'] = matched_faces
+
+	matched_faces.sort()
+	result['matched_faces'] = matched_faces
+
+	return result
+
+
+if __name__ == "__main__":
+	app.run(host='0.0.0.0')
