@@ -1,5 +1,6 @@
 import glob
 import io
+import json
 import os
 import shutil
 import threading
@@ -132,18 +133,20 @@ def process_face_recognition(src_urls, des_urls):
 			known_image = face_recognition.load_image_file(src_url)
 			unknown_image = face_recognition.load_image_file(des_url)
 
-			face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0, model="cnn")
-			known_image_encoding = face_recognition.face_encodings(known_image, face_locations)
+			known_image_encoding = face_recognition.face_encodings(known_image)
 			if len(known_image_encoding) == 0:
-				continue
+				print('Calculate src')
+				face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0, model="cnn")
+				known_image_encoding = face_recognition.face_encodings(known_image, face_locations)
 
 			known_image_encoding = known_image_encoding[0]
 
-			unknown_face_locations = face_recognition.face_locations(unknown_image, number_of_times_to_upsample=0,
-			                                                         model="cnn")
-			unknown_face_encodings = face_recognition.face_encodings(unknown_image, unknown_face_locations)
+			unknown_face_encodings = face_recognition.face_encodings(unknown_image)
 			if len(unknown_face_encodings) == 0:
-				continue
+				print('Calculate unknown')
+				unknown_face_locations = face_recognition.face_locations(unknown_image, number_of_times_to_upsample=0,
+				                                                         model="cnn")
+				unknown_face_encodings = face_recognition.face_encodings(unknown_image, unknown_face_locations)
 
 			unknown_face_encodings = unknown_face_encodings[0]
 
@@ -151,12 +154,9 @@ def process_face_recognition(src_urls, des_urls):
 			results_face_distance = face_recognition.face_distance([known_image_encoding], unknown_face_encodings)[0]
 			matched_faces.append(results_face_distance)
 
-			results_compare_faces = isinstance(results_compare_faces, np.bool_)
-
-			if results_compare_faces is True:
-				matched_faces.sort()
-				result['status'] = results_compare_faces
-				result['matched_faces'] = matched_faces
+			matched_faces.sort()
+			result['status'] = json.dumps(results_compare_faces.tolist())
+			result['matched_faces'] = matched_faces
 
 	matched_faces.sort()
 	result['matched_faces'] = matched_faces
