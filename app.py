@@ -133,22 +133,19 @@ def process_face_recognition(src_urls, des_urls):
 			known_image = face_recognition.load_image_file(src_url)
 			unknown_image = face_recognition.load_image_file(des_url)
 
-			known_image_encoding = face_recognition.face_encodings(known_image)
-			if len(known_image_encoding) == 0:
-				print('Calculate src')
-				face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0, model="cnn")
+			try:
+				known_image_encoding = face_recognition.face_encodings(known_image)[0]
+			except Exception as err:
+				face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0,
+				                                                 model="cnn")
 				known_image_encoding = face_recognition.face_encodings(known_image, face_locations)
 
-			known_image_encoding = known_image_encoding[0]
-
-			unknown_face_encodings = face_recognition.face_encodings(unknown_image)
-			if len(unknown_face_encodings) == 0:
-				print('Calculate unknown')
+			try:
+				unknown_face_encodings = face_recognition.face_encodings(unknown_image)
+			except Exception as err:
 				unknown_face_locations = face_recognition.face_locations(unknown_image, number_of_times_to_upsample=0,
 				                                                         model="cnn")
 				unknown_face_encodings = face_recognition.face_encodings(unknown_image, unknown_face_locations)
-
-			unknown_face_encodings = unknown_face_encodings[0]
 
 			results_compare_faces = face_recognition.compare_faces([known_image_encoding], unknown_face_encodings)[0]
 			results_face_distance = face_recognition.face_distance([known_image_encoding], unknown_face_encodings)[0]
@@ -159,12 +156,16 @@ def process_face_recognition(src_urls, des_urls):
 				matched_faces.sort()
 
 				result['status'] = True
-				result['matched_faces'] = matched_faces
+				result['matched_faces'] = matched_faces[0]
 
 				return result
 
-	matched_faces.sort()
-	result['matched_faces'] = matched_faces
+	if not matched_faces:
+		matched_faces_value = None
+	else:
+		matched_faces.sort()
+		matched_faces_value = matched_faces[0]
+	result['matched_faces'] = matched_faces_value
 
 	return result
 
