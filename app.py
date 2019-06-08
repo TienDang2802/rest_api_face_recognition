@@ -162,7 +162,7 @@ def process_face_recognition(src_urls, des_urls):
 				matched_faces.sort()
 
 				result['status'] = True
-				result['matched_faces'] = matched_faces[0]
+				result['matched_faces'] = min(matched_faces)
 
 				return result
 
@@ -170,7 +170,7 @@ def process_face_recognition(src_urls, des_urls):
 		matched_faces_value = -1
 	else:
 		matched_faces.sort()
-		matched_faces_value = matched_faces[0]
+		matched_faces_value = min(matched_faces)
 
 	result['matched_faces'] = matched_faces_value
 
