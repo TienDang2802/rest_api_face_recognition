@@ -139,13 +139,19 @@ def process_face_recognition(src_urls, des_urls):
 				face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0,
 				                                                 model="cnn")
 				known_image_encoding = face_recognition.face_encodings(known_image, face_locations)
+				if len(known_image_encoding) == 0:
+					continue
+				known_image_encoding = known_image_encoding[0]
 
 			try:
-				unknown_face_encodings = face_recognition.face_encodings(unknown_image)
+				unknown_face_encodings = face_recognition.face_encodings(unknown_image)[0]
 			except Exception as err:
 				unknown_face_locations = face_recognition.face_locations(unknown_image, number_of_times_to_upsample=0,
 				                                                         model="cnn")
 				unknown_face_encodings = face_recognition.face_encodings(unknown_image, unknown_face_locations)
+				if len(unknown_face_encodings) == 0:
+					continue
+				unknown_face_encodings = unknown_face_encodings[0]
 
 			results_compare_faces = face_recognition.compare_faces([known_image_encoding], unknown_face_encodings)[0]
 			results_face_distance = face_recognition.face_distance([known_image_encoding], unknown_face_encodings)[0]
@@ -161,10 +167,11 @@ def process_face_recognition(src_urls, des_urls):
 				return result
 
 	if not matched_faces:
-		matched_faces_value = None
+		matched_faces_value = -1
 	else:
 		matched_faces.sort()
 		matched_faces_value = matched_faces[0]
+
 	result['matched_faces'] = matched_faces_value
 
 	return result
