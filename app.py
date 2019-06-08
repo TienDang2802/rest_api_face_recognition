@@ -127,8 +127,9 @@ def process_face_recognition(src_urls, des_urls):
 		'status': False,
 		'matched_faces': None
 	}
-	matched_faces = []
+
 	for src_url in src_urls:
+		matched_faces = []
 		for des_url in des_urls:
 			known_image = face_recognition.load_image_file(src_url)
 			unknown_image = face_recognition.load_image_file(des_url)
