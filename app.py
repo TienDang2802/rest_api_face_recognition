@@ -154,9 +154,14 @@ def process_face_recognition(src_urls, des_urls):
 			results_face_distance = face_recognition.face_distance([known_image_encoding], unknown_face_encodings)[0]
 			matched_faces.append(results_face_distance)
 
-			matched_faces.sort()
-			result['status'] = json.dumps(results_compare_faces.tolist())
-			result['matched_faces'] = matched_faces
+			is_match_face = json.dumps(results_compare_faces.tolist())
+			if is_match_face == 'true':
+				matched_faces.sort()
+
+				result['status'] = True
+				result['matched_faces'] = matched_faces
+
+				return result
 
 	matched_faces.sort()
 	result['matched_faces'] = matched_faces
