@@ -3,7 +3,6 @@ import io
 import os
 import shutil
 import threading
-import time
 import uuid
 import numpy as np
 
@@ -38,15 +37,26 @@ class FaceCompareAPI(Resource):
 		des_directory = process_directory + '/des'
 		os.makedirs(des_directory)
 
+		# src_threads = []
+		#
 		# for i in range(6):
 		# 	t = threading.Thread(target=fetch_url_src, args=(data['src'], src_directory))
+		# 	src_threads.append(t)
 		# 	t.start()
+		#
+		# for x in src_threads:
+		# 	x.join()
 
 		fetch_url_src(data['src'], src_directory)
 
+		# des_threads = []
 		# for i in range(6):
 		# 	t = threading.Thread(target=fetch_url_des, args=(data['des'], des_directory))
+		# 	des_threads.append(t)
 		# 	t.start()
+		#
+		# for x in des_threads:
+		# 	x.join()
 		fetch_url_des(data['des'], des_directory)
 
 		src_files = glob.glob("{}/*.jpg".format(src_directory))
@@ -77,17 +87,16 @@ api.add_resource(FaceCompareAPI, '/face-compare', endpoint='face-compare')
 
 
 def download_image(out_dir, img_url):
-	filename = img_url.split('/')[-1].split("?")[0]
-	image_file_path = os.path.join(out_dir, filename)
-
 	r = requests.get(img_url, timeout=4.0)
 	if r.status_code != requests.codes.ok:
 		assert False, 'Status code error: {}.'.format(r.status_code)
 
 	with Image.open(io.BytesIO(r.content)) as im:
+		filename = str(uuid.uuid4()) + '.' + im.format
+		image_file_path = os.path.join(out_dir, filename.lower())
 		im.save(image_file_path)
 
-	print('Image downloaded from url: {} and saved to: {}.'.format(img_url, image_file_path))
+	print('Image downloaded from url: {} and saved to: {}'.format(img_url, image_file_path))
 
 
 def fetch_url_src(uris, path):
