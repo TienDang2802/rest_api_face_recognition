@@ -83,7 +83,9 @@ def upload_file():
 		filename = secure_filename(file.filename)
 		src_directory = process_directory + '/' + SRC_DIR_NAME
 		os.makedirs(src_directory)
-		file.save(os.path.join(src_directory, filename))
+		src_file_path = os.path.join(src_directory, filename)
+		file.save(src_file_path)
+		print('Finish upload img SRC: ' + src_file_path)
 
 		request_des_urls = request.values['des'].split(',')
 		total_img_des = len(request_des_urls)
@@ -97,10 +99,7 @@ def upload_file():
 		download_image_des = DownloadImageService()
 		download_image_des.do_download(request_des_urls, des_directory)
 
-		src_file_url = []
-		src_files = glob.glob("{}/*.*".format(src_directory))
-		for src_file in src_files:
-			src_file_url.append(src_file)
+		src_file_url = [src_file_path]
 
 		des_file_url = []
 		des_files = glob.glob("{}/*.*".format(des_directory))

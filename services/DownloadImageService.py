@@ -6,7 +6,7 @@ from queues.DownloadQueue import DownloadQueue
 
 
 class DownloadImageService(object):
-	NUM_FETCH_THREADS = 8
+	NUM_FETCH_THREADS = 20
 
 	def __init__(self, num_fetch_threads=None):
 		if num_fetch_threads:
