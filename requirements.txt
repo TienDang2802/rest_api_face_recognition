@@ -1,3 +1,5 @@
+werkzeug
+requests
 face_recognition
 face_recognition_models
 Click>=6.0

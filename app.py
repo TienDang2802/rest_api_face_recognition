@@ -1,181 +1,124 @@
 import glob
-import io
-import json
 import os
 import shutil
-import threading
 import uuid
-import numpy as np
+from flask import Flask, request, json
+from werkzeug.utils import secure_filename
 
-import face_recognition
-import requests
-from flask import Flask, request
-from flask_restful import Resource, Api
-from PIL import Image
+from services.DownloadImageService import DownloadImageService
+from services.FaceRecognitionService import FaceRecognitionService
 
 app = Flask(__name__)
-api = Api(app)
+
+IMG_DIR_NAME = 'images'
+SRC_DIR_NAME = 'src'
+DES_DIR_NAME = 'des'
 
 
-class FaceCompareAPI(Resource):
-	def post(self):
-		process_id = uuid.uuid4()
+@app.route('/face-compare', methods=['POST'])
+def post():
+	process_id = uuid.uuid4()
 
-		data = request.get_json(force=True)
+	data = request.get_json(force=True)
 
-		total_img_src = len(data['src'])
-		print('Total img src: ' + str(total_img_src))
-		total_img_des = len(data['des'])
-		print('Total img des: ' + str(total_img_des))
+	total_img_src = len(data['src'])
+	print('Total img src: ' + str(total_img_src))
+	total_img_des = len(data['des'])
+	print('Total img des: ' + str(total_img_des))
 
-		process_directory = 'images/' + str(process_id)
+	process_directory = IMG_DIR_NAME + '/' + str(process_id)
+	if not os.path.exists(process_directory):
+		os.makedirs(process_directory)
+
+	src_directory = process_directory + '/' + SRC_DIR_NAME
+	os.makedirs(src_directory)
+
+	des_directory = process_directory + '/' + DES_DIR_NAME
+	os.makedirs(des_directory)
+
+	print('Process download img SRC')
+	download_image_src = DownloadImageService()
+	download_image_src.do_download(data['src'], src_directory)
+
+	print('Process download img DES')
+	download_image_des = DownloadImageService()
+	download_image_des.do_download(data['des'], des_directory)
+
+	src_file_url = []
+	src_files = glob.glob("{}/*.*".format(src_directory))
+	for src_file in src_files:
+		src_file_url.append(src_file)
+
+	des_file_url = []
+	des_files = glob.glob("{}/*.*".format(des_directory))
+	for des_file in des_files:
+		des_file_url.append(des_file)
+
+	face_recognition_service = FaceRecognitionService()
+	data = face_recognition_service.process_face_recognition(src_file_url, des_file_url)
+
+	shutil.rmtree(process_directory)
+
+	response = app.response_class(
+		response=json.dumps(data),
+		status=200,
+		mimetype='application/json'
+	)
+	return response
+
+
+@app.route('/face-compare-upload', methods=['GET', 'POST'])
+def upload_file():
+	process_id = uuid.uuid4()
+	file = request.files['file']
+
+	result = {
+		'message': 'Please upload file'
+	}
+	if file:
+		process_directory = IMG_DIR_NAME + '/' + str(process_id)
 		if not os.path.exists(process_directory):
 			os.makedirs(process_directory)
 
-		src_directory = process_directory + '/src'
+		filename = secure_filename(file.filename)
+		src_directory = process_directory + '/' + SRC_DIR_NAME
 		os.makedirs(src_directory)
+		file.save(os.path.join(src_directory, filename))
 
-		des_directory = process_directory + '/des'
+		request_des_urls = request.values['des'].split(',')
+		total_img_des = len(request_des_urls)
+
+		des_directory = process_directory + '/' + DES_DIR_NAME
 		os.makedirs(des_directory)
 
-		# src_threads = []
-		#
-		# for i in range(6):
-		# 	t = threading.Thread(target=fetch_url_src, args=(data['src'], src_directory))
-		# 	src_threads.append(t)
-		# 	t.start()
-		#
-		# for x in src_threads:
-		# 	x.join()
+		print('Total img des: ' + str(total_img_des))
+		print('Process download img DES')
 
-		fetch_url_src(data['src'], src_directory)
-
-		# des_threads = []
-		# for i in range(6):
-		# 	t = threading.Thread(target=fetch_url_des, args=(data['des'], des_directory))
-		# 	des_threads.append(t)
-		# 	t.start()
-		#
-		# for x in des_threads:
-		# 	x.join()
-		fetch_url_des(data['des'], des_directory)
-
-		src_files = glob.glob("{}/*.jpg".format(src_directory))
-		src_files.extend(glob.glob("{}/*.jpeg".format(src_directory)))
-		src_files.extend(glob.glob("{}/*.png)".format(src_directory)))
-		src_files.extend(glob.glob("{}/*.gif)".format(src_directory)))
+		download_image_des = DownloadImageService()
+		download_image_des.do_download(request_des_urls, des_directory)
 
 		src_file_url = []
+		src_files = glob.glob("{}/*.*".format(src_directory))
 		for src_file in src_files:
 			src_file_url.append(src_file)
 
-		des_files = glob.glob("{}/*.jpg".format(des_directory))
-		des_files.extend(glob.glob("{}/*.jpeg".format(des_directory)))
-		des_files.extend(glob.glob("{}/*.png".format(des_directory)))
-		des_files.extend(glob.glob("{}/*.gif".format(des_directory)))
 		des_file_url = []
+		des_files = glob.glob("{}/*.*".format(des_directory))
 		for des_file in des_files:
 			des_file_url.append(des_file)
 
-		data = process_face_recognition(src_file_url, des_file_url)
+		face_recognition_service = FaceRecognitionService()
+		result = face_recognition_service.process_face_recognition(src_file_url, des_file_url)
 
 		shutil.rmtree(process_directory)
 
-		return data, 200
+	response = app.response_class(
+		response=json.dumps(result),
+		status=200,
+		mimetype='application/json'
+	)
 
-
-api.add_resource(FaceCompareAPI, '/face-compare', endpoint='face-compare')
-
-
-def download_image(out_dir, img_url):
-	r = requests.get(img_url, timeout=4.0)
-	if r.status_code != requests.codes.ok:
-		assert False, 'Status code error: {}.'.format(r.status_code)
-
-	with Image.open(io.BytesIO(r.content)) as im:
-		filename = str(uuid.uuid4()) + '.' + im.format
-		image_file_path = os.path.join(out_dir, filename.lower())
-		im.save(image_file_path)
-
-	print('Image downloaded from url: {} and saved to: {}'.format(img_url, image_file_path))
-
-
-def fetch_url_src(uris, path):
-	for uri in uris:
-		download_image(path, uri)
-		if not os.path.exists(path):
-			r = requests.get(uri, stream=True)
-			if r.status_code == 200:
-				with open(path, 'wb') as f:
-					for chunk in r:
-						f.write(chunk)
-
-
-def fetch_url_des(uris, path):
-	for uri in uris:
-		download_image(path, uri)
-		if not os.path.exists(path):
-			r = requests.get(uri, stream=True)
-			if r.status_code == 200:
-				with open(path, 'wb') as f:
-					for chunk in r:
-						f.write(chunk)
-
-
-def process_face_recognition(src_urls, des_urls):
-	result = {
-		'status': False,
-		'matched_faces': None
-	}
-
-	for src_url in src_urls:
-		matched_faces = []
-		for des_url in des_urls:
-			known_image = face_recognition.load_image_file(src_url)
-			unknown_image = face_recognition.load_image_file(des_url)
-
-			try:
-				known_image_encoding = face_recognition.face_encodings(known_image)[0]
-			except Exception as err:
-				face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0,
-				                                                 model="cnn")
-				known_image_encoding = face_recognition.face_encodings(known_image, face_locations)
-				if len(known_image_encoding) == 0:
-					continue
-				known_image_encoding = known_image_encoding[0]
-
-			try:
-				unknown_face_encodings = face_recognition.face_encodings(unknown_image)[0]
-			except Exception as err:
-				unknown_face_locations = face_recognition.face_locations(unknown_image, number_of_times_to_upsample=0,
-				                                                         model="cnn")
-				unknown_face_encodings = face_recognition.face_encodings(unknown_image, unknown_face_locations)
-				if len(unknown_face_encodings) == 0:
-					continue
-				unknown_face_encodings = unknown_face_encodings[0]
-
-			results_compare_faces = face_recognition.compare_faces([known_image_encoding], unknown_face_encodings)[0]
-			results_face_distance = face_recognition.face_distance([known_image_encoding], unknown_face_encodings)[0]
-			matched_faces.append(results_face_distance)
-
-			is_match_face = json.dumps(results_compare_faces.tolist())
-			if is_match_face == 'true':
-				matched_faces.sort()
-
-				result['status'] = True
-				result['matched_faces'] = min(matched_faces)
-
-				return result
-
-	if not matched_faces:
-		matched_faces_value = -1
-	else:
-		matched_faces.sort()
-		matched_faces_value = min(matched_faces)
-
-	result['matched_faces'] = matched_faces_value
-
-	return result
+	return response
 
 
 if __name__ == "__main__":
