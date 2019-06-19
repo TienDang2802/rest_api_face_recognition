@@ -1,82 +1,44 @@
-import json
+from queue import Queue
 
 import face_recognition
 
+from QueueMessages.FaceRecognitionQueueMessage import FaceRecognitionQueueMessage
+from queues.FaceRecognitionQueue import FaceRecognitionQueue
+
 
 class FaceRecognitionService(object):
+	NUM_FETCH_THREADS = 30
+
 	def process_face_recognition(self, src_urls, des_urls):
-		result = {
-			'status': False,
-			'matched_faces': None
-		}
+		results_face_distance = []
+		lst_des_img_encoding = {}
+
+		face_recognition_queue = Queue()
 
 		for src_url in src_urls:
-			matched_faces = []
+			src_image = face_recognition.load_image_file(src_url)
+			try:
+				src_image_encoding = face_recognition.face_encodings(src_image)[0]
+			except IndexError:
+				continue
+
 			for des_url in des_urls:
-				known_image = face_recognition.load_image_file(src_url)
-				unknown_image = face_recognition.load_image_file(des_url)
+				queue_message = FaceRecognitionQueueMessage(src_image_encoding, des_url)
+				face_recognition_queue.put(queue_message)
 
-				try:
-					known_image_encoding = face_recognition.face_encodings(known_image)[0]
-				except IndexError:
-					try:
-						face_locations = face_recognition.face_locations(known_image, number_of_times_to_upsample=0,
-						                                                 model="cnn")
-						known_image_encoding = face_recognition.face_encodings(known_image, face_locations)
-						if len(known_image_encoding) == 0:
-							continue
-						known_image_encoding = known_image_encoding[0]
-					except RuntimeError as err:
-						print('Error face_locations of SRC: ' + src_url)
-						print(str(err))
+		for i in range(self.NUM_FETCH_THREADS):
+			worker = FaceRecognitionQueue(face_recognition_queue, results_face_distance, lst_des_img_encoding)
+			worker.setDaemon(True)
+			worker.start()
 
-						return {
-							'status': False,
-							'matched_faces': -1
-						}
+		face_recognition_queue.join()
 
-				try:
-					unknown_face_encodings = face_recognition.face_encodings(unknown_image)[0]
-				except IndexError:
-					try:
-						unknown_face_locations = face_recognition.face_locations(unknown_image,
-						                                                         number_of_times_to_upsample=0,
-						                                                         model="cnn")
-						unknown_face_encodings = face_recognition.face_encodings(unknown_image, unknown_face_locations)
-						if len(unknown_face_encodings) == 0:
-							continue
-						unknown_face_encodings = unknown_face_encodings[0]
-					except RuntimeError as err:
-						print('=======================================')
-						print('Error face_locations of DES: ' + des_url)
-						print(str(err))
+		matched_faces = min(results_face_distance)
 
-						return {
-							'status': False,
-							'matched_faces': -1
-						}
+		return {
+			'status': True if matched_faces < 0.6 else False,
+			'matched_faces': matched_faces,
+		}
 
-				results_compare_faces = face_recognition.compare_faces([known_image_encoding], unknown_face_encodings)[
-					0]
-				results_face_distance = face_recognition.face_distance([known_image_encoding], unknown_face_encodings)[
-					0]
-				matched_faces.append(results_face_distance)
-
-				is_match_face = json.dumps(results_compare_faces.tolist())
-				if is_match_face == 'true':
-					matched_faces.sort()
-
-					result['status'] = True
-					result['matched_faces'] = results_face_distance
-
-					return result
-
-		if not matched_faces:
-			matched_faces_value = -1
-		else:
-			matched_faces.sort()
-			matched_faces_value = min(matched_faces)
-
-		result['matched_faces'] = matched_faces_value
-
-		return result
+	def compare_face(self, src_img_encoding, des_face_encodings):
+		return face_recognition.face_distance([src_img_encoding], des_face_encodings)[0]

@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from services.DownloadImageService import DownloadImageService
 from services.FaceRecognitionService import FaceRecognitionService
 
+
 app = Flask(__name__)
 
 IMG_DIR_NAME = 'images'
@@ -17,7 +18,7 @@ DES_DIR_NAME = 'des'
 
 @app.route('/face-compare', methods=['POST'])
 def post():
-	process_id = uuid.uuid4()
+	process_id = str(uuid.uuid4())
 
 	data = request.get_json(force=True)
 
@@ -26,7 +27,7 @@ def post():
 	total_img_des = len(data['des'])
 	print('Total img des: ' + str(total_img_des))
 
-	process_directory = IMG_DIR_NAME + '/' + str(process_id)
+	process_directory = IMG_DIR_NAME + '/' + process_id
 	if not os.path.exists(process_directory):
 		os.makedirs(process_directory)
 
@@ -121,4 +122,4 @@ def upload_file():
 
 
 if __name__ == "__main__":
-	app.run(host='0.0.0.0')
+	app.run(host='0.0.0.0', debug=True, port=5003)
