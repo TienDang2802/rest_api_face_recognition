@@ -25,7 +25,7 @@ class DownloadQueue(threading.Thread):
 						for chunk in r:
 							f.write(chunk)
 
-			r = requests.get(uri, timeout=4.0)
+			r = requests.get(uri, timeout=3.0)
 			if r.status_code != requests.codes.ok:
 				assert False, 'Status code error: {}.'.format(r.status_code)
 
