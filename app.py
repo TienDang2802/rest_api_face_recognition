@@ -8,7 +8,6 @@ from werkzeug.utils import secure_filename
 from services.DownloadImageService import DownloadImageService
 from services.FaceRecognitionService import FaceRecognitionService
 
-
 app = Flask(__name__)
 
 IMG_DIR_NAME = 'images'
@@ -122,4 +121,4 @@ def upload_file():
 
 
 if __name__ == "__main__":
-	app.run(host='0.0.0.0'  )
+	app.run(host='0.0.0.0')
