@@ -25,7 +25,13 @@ class DownloadQueue(threading.Thread):
 						for chunk in r:
 							f.write(chunk)
 
-			r = requests.get(uri, timeout=3.0)
+			try:
+				r = requests.get(uri, timeout=10)
+			except requests.exceptions.Timeout:
+				print('Timeout occurred: ', uri)
+				self.m_queue.put(msg_queue)
+				continue
+
 			if r.status_code != requests.codes.ok:
 				assert False, 'Status code error: {}.'.format(r.status_code)
 
