@@ -8,7 +8,7 @@ import cv2
 
 class FaceRecognitionService(object):
 	def process_face_recognition(self, src_urls, des_urls):
-		#self.process_crop_bounding_box_in_process_pool(src_urls)
+		# self.process_crop_bounding_box_in_process_pool(src_urls)
 
 		known_face_encodings = self.scan_known_people(src_urls)
 
@@ -28,8 +28,12 @@ class FaceRecognitionService(object):
 			img = face_recognition.load_image_file(file_url)
 			encodings = face_recognition.face_encodings(img)
 			if len(encodings) == 0:
-				face_locations = face_recognition.face_locations(img, model="cnn")
-				encodings = face_recognition.face_encodings(img, face_locations)
+				try:
+					face_locations = face_recognition.face_locations(img, model="cnn")
+					encodings = face_recognition.face_encodings(img, face_locations)
+				except (IndexError, MemoryError) as err:
+					print("===> ERROR {}: No faces found in {}".format(err, file_url))
+					continue
 				if len(encodings) == 0:
 					print("WARNING: No faces found in {}. Ignoring file.".format(file_url))
 				else:
