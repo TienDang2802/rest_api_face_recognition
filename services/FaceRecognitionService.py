@@ -31,8 +31,9 @@ class FaceRecognitionService(object):
 				try:
 					face_locations = face_recognition.face_locations(img, model="cnn")
 					encodings = face_recognition.face_encodings(img, face_locations)
-				except (IndexError, MemoryError) as err:
-					print("===> ERROR {}: No faces found in {}".format(err, file_url))
+				except (IndexError, MemoryError, RuntimeError) as err:
+					print("===> ERROR:", err)
+					print("===> No faces found in {}".format(file_url))
 					continue
 				if len(encodings) == 0:
 					print("WARNING: No faces found in {}. Ignoring file.".format(file_url))
@@ -64,7 +65,7 @@ class FaceRecognitionService(object):
 			distance = face_recognition.face_distance(known_face_encodings, unknown_encoding)
 			return min(distance)
 
-	def process_images_in_process_pool(self, images_to_check, known_face_encodings, number_of_cpus=4):
+	def process_images_in_process_pool(self, images_to_check, known_face_encodings, number_of_cpus=3):
 		print('Process image: ', images_to_check)
 		if number_of_cpus == -1:
 			processes = None
@@ -83,9 +84,12 @@ class FaceRecognitionService(object):
 			itertools.repeat(known_face_encodings)
 		)
 
-		return pool.starmap(self.test_image, function_parameters)
+		result = pool.starmap(self.test_image, function_parameters)
+		pool.close()
 
-	def process_crop_bounding_box_in_process_pool(self, img_url, number_of_cpus=4):
+		return result
+
+	def process_crop_bounding_box_in_process_pool(self, img_url, number_of_cpus=3):
 		processes = number_of_cpus
 		context = multiprocessing
 		if "forkserver" in multiprocessing.get_all_start_methods():
@@ -96,6 +100,7 @@ class FaceRecognitionService(object):
 		function_parameters = zip(img_url)
 
 		pool.starmap(self.crop_bounding_box, function_parameters)
+		pool.close()
 
 	def crop_bounding_box(self, img_url):
 		bounding_box_image = cv2.imread(img_url)
