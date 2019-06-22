@@ -1,9 +1,11 @@
 import io
 import os
+import socket
 import threading
 import uuid
 
 import requests
+import urllib3
 from PIL import Image
 
 
@@ -27,7 +29,13 @@ class DownloadQueue(threading.Thread):
 
 			try:
 				r = requests.get(uri, timeout=10)
-			except requests.exceptions.Timeout:
+			except (
+					requests.exceptions.Timeout,
+					requests.exceptions.ConnectionError,
+					Exception,
+					socket.timeout,
+					urllib3.exceptions.ReadTimeoutError
+			):
 				print('Timeout occurred: ', uri)
 				self.m_queue.put(msg_queue)
 				continue

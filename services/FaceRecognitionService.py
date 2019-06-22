@@ -56,7 +56,11 @@ class FaceRecognitionService(object):
 			pil_img.thumbnail((1600, 1600), PIL.Image.LANCZOS)
 			unknown_image = np.array(pil_img)
 
-		unknown_encodings = face_recognition.face_encodings(unknown_image)
+		try:
+			unknown_encodings = face_recognition.face_encodings(unknown_image)
+		except Exception as e:
+			print('>>> ERROR: ', e)
+			return 999
 
 		if not unknown_encodings:
 			return 999
@@ -65,7 +69,7 @@ class FaceRecognitionService(object):
 			distance = face_recognition.face_distance(known_face_encodings, unknown_encoding)
 			return min(distance)
 
-	def process_images_in_process_pool(self, images_to_check, known_face_encodings, number_of_cpus=3):
+	def process_images_in_process_pool(self, images_to_check, known_face_encodings, number_of_cpus=4):
 		print('Process image: ', images_to_check)
 		if number_of_cpus == -1:
 			processes = None
@@ -89,7 +93,7 @@ class FaceRecognitionService(object):
 
 		return result
 
-	def process_crop_bounding_box_in_process_pool(self, img_url, number_of_cpus=3):
+	def process_crop_bounding_box_in_process_pool(self, img_url, number_of_cpus=4):
 		processes = number_of_cpus
 		context = multiprocessing
 		if "forkserver" in multiprocessing.get_all_start_methods():
