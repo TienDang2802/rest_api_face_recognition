@@ -81,7 +81,7 @@ class FaceRecognitionService(object):
 		if "forkserver" in multiprocessing.get_all_start_methods():
 			context = multiprocessing.get_context("forkserver")
 
-		pool = context.Pool(processes=processes, maxtasksperchild=1000)
+		pool = context.Pool(processes=processes, maxtasksperchild=100)
 
 		function_parameters = zip(
 			images_to_check,
