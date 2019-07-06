@@ -90,6 +90,7 @@ class FaceRecognitionService(object):
 
 		result = pool.starmap(self.test_image, function_parameters)
 		pool.close()
+		pool.join()
 
 		return result
 
@@ -105,6 +106,7 @@ class FaceRecognitionService(object):
 
 		pool.starmap(self.crop_bounding_box, function_parameters)
 		pool.close()
+		pool.join()
 
 	def crop_bounding_box(self, img_url):
 		bounding_box_image = cv2.imread(img_url)
