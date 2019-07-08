@@ -34,6 +34,7 @@ class DownloadImageService(object):
 
 		for i in range(self.num_fetch_threads):
 			t = threading.Thread(target=self.worker)
+			t.setDaemon(True)
 			t.start()
 			self.threads.append(t)
 
