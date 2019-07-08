@@ -79,7 +79,7 @@ class DownloadImageService(object):
 					urllib3.exceptions.ReadTimeoutError
 			):
 				print('Timeout occurred: ', uri)
-				continue
+				self.download_queue.task_done()
 
 			if r.status_code != requests.codes.ok:
 				assert False, 'Status code error: {}.'.format(r.status_code)
