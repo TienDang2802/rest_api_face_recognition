@@ -31,7 +31,7 @@ class DownloadImageService(object):
 			img_size = meta.get(name="content-length")
 
 			if img_size is None or int(img_size) < 10000:
-				print('>>> File size < 10mb. Skipped :' + img_size)
+				print('>>> File size < 10mb or None. Skipped :' + image_url)
 				return None
 
 			# SRC
