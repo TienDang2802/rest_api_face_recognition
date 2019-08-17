@@ -1,94 +1,67 @@
 import os
-import io
-import threading
-from queue import Queue
-import os
-import socket
-import threading
-import uuid
+import urllib.request
+from urllib import parse
+from urllib.error import HTTPError
+from concurrent.futures import ThreadPoolExecutor
+from os.path import basename
+import mimetypes
 
-import requests
-import urllib3
-from PIL import Image
-from QueueMessages.ImageQueueMessage import ImageQueueMessage
-from queues.DownloadQueue import DownloadQueue
+MAX_WORKERS = 6
 
 
 class DownloadImageService(object):
-	NUM_FETCH_THREADS = 20
+	def __init__(self, img_directory, redis_client, is_check_tag=False):
+		self.img_directory = img_directory
+		self.redis_client = redis_client
+		self.is_check_tag = is_check_tag
 
-	def __init__(self, num_fetch_threads=None):
-		if num_fetch_threads:
-			self.num_fetch_threads = num_fetch_threads
-		else:
-			self.num_fetch_threads = self.NUM_FETCH_THREADS
-
-		self.download_queue = Queue()
-		self.threads = []
-
-	def do_download(self, uris, img_directory: str):
 		if not os.path.exists(img_directory):
 			os.makedirs(img_directory)
 
-		self.__fetch_url_src(uris, img_directory)
+	def do_download(self, uris):
+		with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+			result = list(executor.map(self.download_image, uris, timeout=60))
 
-		for i in range(self.num_fetch_threads):
-			t = threading.Thread(target=self.worker)
-			t.setDaemon(True)
-			t.start()
-			self.threads.append(t)
+		return list(filter(None, result))
 
-		# block until all tasks are done
-		self.download_queue.join()
+	def download_image(self, image_url):
+		try:
+			response = urllib.request.urlopen(image_url)
+			meta = response.info()
+			img_size = meta.get(name="content-length")
 
-		# stop workers
-		for i in range(self.num_fetch_threads):
-			self.download_queue.put(None)
-		for t in self.threads:
-			t.join()
+			if int(img_size) < 10000:
+				print('>>> File size < 10mb. Skipped :' + img_size)
+				return None
 
-		print('Process download done')
+			# SRC
+			if self.is_check_tag:
+				try:
+					query_def = parse.parse_qs(parse.urlparse(image_url).query)['tag'][0]
+					query_def_list = query_def.split('-')
+					img_name_tag = '-'.join([query_def_list[0], query_def_list[-1]])
 
-	def __fetch_url_src(self, uris, path_dir):
-		for uri in uris:
-			queue_message = ImageQueueMessage(uri, path_dir)
-			self.download_queue.put(queue_message)
+					extension = mimetypes.guess_extension(meta.get(name="content-type"))
+					directory_img = self.img_directory + '/' + "{}{}".format(img_name_tag, extension)
+				except KeyError:
+					img = basename(response.url)
+					directory_img = self.img_directory + '/' + img.split('?')[0]
+			else:
+				img = basename(response.url)
+				directory_img = self.img_directory + '/' + img.split('?')[0]
 
-	def worker(self):
-		while True:
-			msg_queue = self.download_queue.get()
-			if msg_queue is None:
-				break
-			uri = msg_queue.get_img_url()
-			img_dir = msg_queue.get_img_dir()
+			print("Downloading Image url: ", image_url)
+			urllib.request.urlretrieve(image_url, directory_img)
 
-			if not os.path.exists(img_dir):
-				r = requests.get(uri, stream=True)
-				if r.status_code == 200:
-					with open(img_dir, 'wb') as f:
-						for chunk in r:
-							f.write(chunk)
+			# Set cache img URL
+			self.redis_client.set(image_url, directory_img, ex=3600)
 
-			try:
-				r = requests.get(uri)
-			except (
-					requests.exceptions.Timeout,
-					requests.exceptions.ConnectionError,
-					Exception,
-					socket.timeout,
-					urllib3.exceptions.ReadTimeoutError
-			):
-				print('Timeout occurred: ', uri)
-				self.download_queue.task_done()
-
-			if r.status_code != requests.codes.ok:
-				assert False, 'Status code error: {}.'.format(r.status_code)
-
-			with Image.open(io.BytesIO(r.content)) as im:
-				filename = str(uuid.uuid4()) + '.' + im.format
-				image_file_path = os.path.join(img_dir, filename.lower())
-				im.save(image_file_path)
-
-			print('Image downloaded from url: {} and saved to: {}'.format(uri, img_dir))
-
-			self.download_queue.task_done()
+			return directory_img
+		except FileNotFoundError as err:
+			print('>>> File not found:' + directory_img)
+			print(err)  # something wrong with local path
+			return None
+		except HTTPError as err:
+			print('>>> Download img error:' + image_url)
+			print(err)  # something wrong with url
+			return None
