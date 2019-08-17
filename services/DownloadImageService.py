@@ -30,7 +30,7 @@ class DownloadImageService(object):
 			meta = response.info()
 			img_size = meta.get(name="content-length")
 
-			if int(img_size) < 10000:
+			if img_size is None or int(img_size) < 10000:
 				print('>>> File size < 10mb. Skipped :' + img_size)
 				return None
 
