@@ -49,7 +49,8 @@ def post():
 	face_recognition_service = FaceRecognitionService()
 	data = face_recognition_service.process_face_recognition(src, des, redis_client)
 
-	shutil.rmtree(process_directory)
+	# Remove directory DES
+	shutil.rmtree(des_directory)
 
 	response = app.response_class(
 		response=json.dumps(data),

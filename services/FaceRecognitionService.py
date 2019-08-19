@@ -5,6 +5,10 @@ import multiprocessing
 import itertools
 import PIL.Image
 import numpy as np
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
+cache_ttl = os.getenv("CACHE_TTL")
 
 
 class FaceRecognitionService(object):
@@ -48,7 +52,7 @@ class FaceRecognitionService(object):
 					known_face_encodings.append(encodings[0])
 
 				cache_value_json_string = pickle.dumps(encodings[0])
-				redis_client.set(img_name, cache_value_json_string, ex=3600)
+				redis_client.set(img_name, cache_value_json_string, ex=cache_ttl)
 
 		return known_face_encodings
 

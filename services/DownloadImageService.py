@@ -5,6 +5,12 @@ from urllib.error import HTTPError
 from concurrent.futures import ThreadPoolExecutor
 from os.path import basename
 import mimetypes
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
+
+prefix_img_url_cache = os.getenv("PREFIX_IMG_URL_CACHE")
+cache_ttl = os.getenv("CACHE_TTL")
 
 MAX_WORKERS = 6
 
@@ -28,10 +34,11 @@ class DownloadImageService(object):
 		try:
 			response = urllib.request.urlopen(image_url)
 			meta = response.info()
+
 			img_size = meta.get(name="content-length")
 
-			if img_size is None or int(img_size) < 10000:
-				print('>>> File size < 10mb or None. Skipped :' + image_url)
+			if img_size is not None and int(img_size) < 10000:
+				print('>>> File size < 10mb. Skipped :' + image_url)
 				return None
 
 			# SRC
@@ -42,19 +49,26 @@ class DownloadImageService(object):
 					img_name_tag = '-'.join([query_def_list[0], query_def_list[-1]])
 
 					extension = mimetypes.guess_extension(meta.get(name="content-type"))
-					directory_img = self.img_directory + '/' + "{}{}".format(img_name_tag, extension)
+					img_name = "{}{}".format(img_name_tag, extension)
+					directory_img = self.img_directory + '/' + img_name
+
+					if self.redis_client.exists(prefix_img_url_cache + img_name):
+						return self.redis_client.get(prefix_img_url_cache + img_name)
+
 				except KeyError:
 					img = basename(response.url)
-					directory_img = self.img_directory + '/' + img.split('?')[0]
+					img_name = img.split('?')[0]
+					directory_img = self.img_directory + '/' + img_name
+
+				# Set cache img URL
+				self.redis_client.set(prefix_img_url_cache + img_name, directory_img, ex=cache_ttl)
 			else:
 				img = basename(response.url)
-				directory_img = self.img_directory + '/' + img.split('?')[0]
+				img_name = img.split('?')[0]
+				directory_img = self.img_directory + '/' + img_name
 
 			print("Downloading Image url: ", image_url)
 			urllib.request.urlretrieve(image_url, directory_img)
-
-			# Set cache img URL
-			self.redis_client.set(image_url, directory_img, ex=3600)
 
 			return directory_img
 		except FileNotFoundError as err:
