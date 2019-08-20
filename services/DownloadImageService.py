@@ -1,4 +1,5 @@
 import os
+import hashlib
 import urllib.request
 from urllib import parse
 from urllib.error import HTTPError
@@ -45,8 +46,8 @@ class DownloadImageService(object):
 			if self.is_check_tag:
 				try:
 					query_def = parse.parse_qs(parse.urlparse(image_url).query)['tag'][0]
-					query_def_list = query_def.split('-')
-					img_name_tag = '-'.join([query_def_list[0], query_def_list[-1]])
+					query_def_list = hashlib.md5(query_def.encode())
+					img_name_tag = query_def_list.hexdigest()
 
 					extension = mimetypes.guess_extension(meta.get(name="content-type"))
 					img_name = "{}{}".format(img_name_tag, extension)
