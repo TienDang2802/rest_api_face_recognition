@@ -1,9 +1,10 @@
 import os
 import hashlib
+import time
 import urllib.request
 from urllib import parse
 from urllib.error import HTTPError
-from concurrent.futures import ThreadPoolExecutor
+from concurrent import futures
 from os.path import basename
 import mimetypes
 from dotenv import load_dotenv, find_dotenv
@@ -26,8 +27,12 @@ class DownloadImageService(object):
 			os.makedirs(img_directory)
 
 	def do_download(self, uris):
-		with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-			result = list(executor.map(self.download_image, uris, timeout=60))
+		with futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+			try:
+				result = list(executor.map(self.download_image, uris, timeout=60))
+			except futures.TimeoutError:
+				print('>>>> TimeoutError')
+				pass
 
 		return list(filter(None, result))
 
@@ -35,6 +40,7 @@ class DownloadImageService(object):
 		try:
 			response = urllib.request.urlopen(image_url)
 			meta = response.info()
+			time.sleep(0.1)
 
 			img_size = meta.get(name="content-length")
 
@@ -50,6 +56,11 @@ class DownloadImageService(object):
 					img_name_tag = query_def_list.hexdigest()
 
 					extension = mimetypes.guess_extension(meta.get(name="content-type"))
+					print('>>> extension')
+					print(extension)
+					if extension in ['.jpe', '.jif', '.jfif', '.jfi']:
+						extension = '.jpeg'
+
 					img_name = "{}{}".format(img_name_tag, extension)
 					directory_img = self.img_directory + '/' + img_name
 

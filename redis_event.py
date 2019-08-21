@@ -5,6 +5,7 @@ import shutil
 import redis as redis
 from dotenv import load_dotenv, find_dotenv
 from pathlib import Path
+import time
 
 load_dotenv(find_dotenv())
 
@@ -38,3 +39,4 @@ if __name__ == '__main__':
 								shutil.rmtree(dir_path)
 			except KeyError:
 				continue
+		time.sleep(0.2)
