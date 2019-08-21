@@ -28,6 +28,8 @@ class FaceRecognitionService(object):
 		known_face_encodings = []
 
 		for file_url in file_urls:
+			if isinstance(file_url, bytes):
+				file_url = file_url.decode("utf-8")
 			img_name = os.path.basename(file_url)
 			if redis_client.exists(img_name):
 				encodings_cache = pickle.loads(redis_client.get(img_name))
