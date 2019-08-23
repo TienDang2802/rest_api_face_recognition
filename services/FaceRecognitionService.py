@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 import face_recognition
 import multiprocessing
 import itertools
@@ -57,6 +58,7 @@ class FaceRecognitionService(object):
 
 				cache_value_json_string = pickle.dumps(encodings[0])
 				redis_client.set(img_name, cache_value_json_string, ex=cache_ttl)
+			time.sleep(0.1)
 
 		return known_face_encodings
 
