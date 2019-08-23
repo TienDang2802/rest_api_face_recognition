@@ -1,6 +1,7 @@
 import os
 import uuid
 import shutil
+import time
 from flask import Flask, request, json
 from services.DownloadImageService import DownloadImageService
 from services.FaceRecognitionService import FaceRecognitionService
@@ -46,6 +47,7 @@ def post():
 	des_directory = process_directory + '/' + DIR_NAME_DES
 	des = _do_download(data['des'], des_directory, redis_client)
 
+	time.sleep(0.01)
 	face_recognition_service = FaceRecognitionService()
 	data = face_recognition_service.process_face_recognition(src, des, redis_client)
 

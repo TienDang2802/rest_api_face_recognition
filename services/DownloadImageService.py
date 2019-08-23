@@ -14,7 +14,7 @@ load_dotenv(find_dotenv())
 prefix_img_url_cache = os.getenv("PREFIX_IMG_URL_CACHE")
 cache_ttl = os.getenv("CACHE_TTL")
 
-MAX_WORKERS = 6
+MAX_WORKERS = 20
 
 
 class DownloadImageService(object):
@@ -40,12 +40,11 @@ class DownloadImageService(object):
 		try:
 			response = urllib.request.urlopen(image_url)
 			meta = response.info()
-			time.sleep(0.1)
 
 			img_size = meta.get(name="content-length")
 
-			if img_size is not None and int(img_size) < 10000:
-				print('>>> File size < 10mb. Skipped :' + image_url)
+			if img_size is not None and int(img_size) < 1000:
+				print('>>> File size < 1mb. Skipped :' + image_url)
 				return None
 
 			# SRC
