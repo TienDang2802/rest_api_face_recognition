@@ -1,6 +1,5 @@
 import os
 import pickle
-import time
 import face_recognition
 import multiprocessing
 import itertools
@@ -58,7 +57,6 @@ class FaceRecognitionService(object):
 
 				cache_value_json_string = pickle.dumps(encodings[0])
 				redis_client.set(img_name, cache_value_json_string, ex=cache_ttl)
-			time.sleep(0.2)
 
 		return known_face_encodings
 
@@ -87,8 +85,9 @@ class FaceRecognitionService(object):
 			distance = face_recognition.face_distance(known_face_encodings, unknown_encoding)
 			return min(distance)
 
-	def process_images_in_process_pool(self, images_to_check, known_face_encodings, number_of_cpus=4):
+	def process_images_in_process_pool(self, images_to_check, known_face_encodings):
 		print('Process image: ', images_to_check)
+		number_of_cpus = multiprocessing.cpu_count() - 1
 		if number_of_cpus == -1:
 			processes = None
 		else:
