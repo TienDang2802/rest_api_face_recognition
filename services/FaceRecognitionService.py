@@ -91,16 +91,17 @@ class FaceRecognitionService(object):
 
 		# macOS will crash due to a bug in libdispatch if you don't use 'forkserver'
 		context = multiprocessing.get_context('spawn')
-		if "forkserver" in multiprocessing.get_all_start_methods():
-			context = multiprocessing.get_context("forkserver")
 
-		pool = context.Pool(processes=processes)
+		pool = context.Pool(processes=processes, maxtasksperchild=100)
 
 		function_parameters = zip(
 			images_to_check,
 			itertools.repeat(known_face_encodings)
 		)
 
-		result = pool.starmap(self.test_image, function_parameters)
+		result = pool.starmap(self.test_image, function_parameters, chunksize=50)
+		pool.close()
+		pool.terminate()
+		pool.join()
 
 		return result
