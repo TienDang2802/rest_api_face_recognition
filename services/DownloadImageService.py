@@ -27,7 +27,6 @@ class DownloadImageService(object):
 			os.makedirs(img_directory)
 
 	def do_download(self, uris):
-		global result
 		with futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
 			try:
 				result = list(executor.map(self.download_image, uris, timeout=60))

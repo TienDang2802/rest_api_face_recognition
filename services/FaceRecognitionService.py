@@ -37,7 +37,9 @@ class FaceRecognitionService(object):
 			else:
 				file_url = "./{}".format(file_url)
 				file_url = os.path.abspath(file_url)
-				print('>>>>> File URL', file_url)
+				if not os.path.exists(file_url):
+					print('>>>>>> File not exists: ', file_url)
+					continue
 				img = face_recognition.load_image_file(file_url)
 				encodings = face_recognition.face_encodings(img)
 
