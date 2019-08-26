@@ -14,7 +14,7 @@ load_dotenv(find_dotenv())
 prefix_img_url_cache = os.getenv("PREFIX_IMG_URL_CACHE")
 cache_ttl = os.getenv("CACHE_TTL")
 
-MAX_WORKERS = 8
+MAX_WORKERS = os.getenv("MAX_WORKERS")
 
 
 class DownloadImageService(object):
@@ -27,11 +27,12 @@ class DownloadImageService(object):
 			os.makedirs(img_directory)
 
 	def do_download(self, uris):
+		global result
 		with futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
 			try:
 				result = list(executor.map(self.download_image, uris, timeout=60))
 			except futures.TimeoutError:
-				print('>>>> TimeoutError')
+				print('>>>> TimeoutError do_download')
 				pass
 
 		return list(filter(None, result))
