@@ -3,7 +3,7 @@ import pickle
 import face_recognition
 import multiprocessing
 import itertools
-import PIL.Image
+from PIL import Image
 import numpy as np
 from dotenv import load_dotenv, find_dotenv
 
@@ -71,8 +71,8 @@ class FaceRecognitionService(object):
 
 		# Scale down image if it's giant so things run a little faster
 		if max(unknown_image.shape) > 1600:
-			pil_img = PIL.Image.fromarray(unknown_image)
-			pil_img.thumbnail((1600, 1600), PIL.Image.LANCZOS)
+			pil_img = Image.fromarray(unknown_image)
+			pil_img.thumbnail((1600, 1600), Image.LANCZOS)
 			unknown_image = np.array(pil_img)
 
 		try:
