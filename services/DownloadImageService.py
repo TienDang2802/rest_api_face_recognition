@@ -14,7 +14,7 @@ load_dotenv(find_dotenv())
 prefix_img_url_cache = os.getenv("PREFIX_IMG_URL_CACHE")
 cache_ttl = os.getenv("CACHE_TTL")
 
-MAX_WORKERS = os.getenv("MAX_WORKERS")
+MAX_WORKERS = int(os.getenv("MAX_WORKERS"))
 
 
 class DownloadImageService(object):
