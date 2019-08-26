@@ -1,5 +1,7 @@
 import os
 import pickle
+import time
+
 import face_recognition
 import multiprocessing
 import itertools
@@ -35,6 +37,7 @@ class FaceRecognitionService(object):
 				encodings_cache = pickle.loads(redis_client.get(img_name))
 				known_face_encodings.append(encodings_cache)
 			else:
+				time.sleep(0.25)
 				file_url = "./{}".format(file_url)
 				file_url = os.path.abspath(file_url)
 				if not os.path.exists(file_url):
