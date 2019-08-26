@@ -77,7 +77,7 @@ class FaceRecognitionService(object):
 
 		try:
 			unknown_encodings = face_recognition.face_encodings(unknown_image)
-		except (IndexError, MemoryError, RuntimeError, Exception) as e:
+		except (IndexError, MemoryError, RuntimeError, Exception, OSError) as e:
 			print('>>> ERROR: ', e)
 			return 999
 

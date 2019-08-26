@@ -3,7 +3,7 @@ import hashlib
 import time
 import urllib.request
 from urllib import parse
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from concurrent import futures
 from os.path import basename
 import mimetypes
@@ -55,8 +55,6 @@ class DownloadImageService(object):
 					img_name_tag = query_def_list.hexdigest()
 
 					extension = mimetypes.guess_extension(meta.get(name="content-type"))
-					print('>>> extension')
-					print(extension)
 					if extension in ['.jpe', '.jif', '.jfif', '.jfi']:
 						extension = '.jpeg'
 
@@ -86,7 +84,7 @@ class DownloadImageService(object):
 			print('>>> File not found:' + directory_img)
 			print(err)  # something wrong with local path
 			return None
-		except HTTPError as err:
+		except (HTTPError, URLError, Conten) as err:
 			print('>>> Download img error:' + image_url)
 			print(err)  # something wrong with url
 			return None
