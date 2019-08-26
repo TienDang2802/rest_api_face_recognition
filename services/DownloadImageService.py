@@ -1,5 +1,6 @@
 import os
 import hashlib
+import random
 import time
 import urllib.request
 from urllib import parse
@@ -77,6 +78,7 @@ class DownloadImageService(object):
 				directory_img = self.img_directory + '/' + img_name
 
 			print("Downloading Image url: ", image_url)
+			time.sleep(random.random() / 4)  # simulate work
 			urllib.request.urlretrieve(image_url, directory_img)
 
 			return directory_img

@@ -37,7 +37,6 @@ class FaceRecognitionService(object):
 				encodings_cache = pickle.loads(redis_client.get(img_name))
 				known_face_encodings.append(encodings_cache)
 			else:
-				time.sleep(0.25)
 				file_url = "./{}".format(file_url)
 				file_url = os.path.abspath(file_url)
 				if not os.path.exists(file_url):
@@ -96,10 +95,8 @@ class FaceRecognitionService(object):
 			return min(distance)
 
 	def process_images_in_process_pool(self, images_to_check, known_face_encodings):
-		print('Process image: ', images_to_check)
 		cpu_count = multiprocessing.cpu_count()
 		processes = cpu_count // 2
-		print('>>>>>>> Processes count', str(processes))
 
 		# macOS will crash due to a bug in libdispatch if you don't use 'forkserver'
 		context = multiprocessing.get_context('spawn')
