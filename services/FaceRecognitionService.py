@@ -35,7 +35,8 @@ class FaceRecognitionService(object):
 				encodings_cache = pickle.loads(redis_client.get(img_name))
 				known_face_encodings.append(encodings_cache)
 			else:
-				file_url = "./{}".format(file_url)
+				file_url = "../{}".format(file_url)
+				file_url = os.path.abspath(file_url)
 				print('>>>>> File URL', file_url)
 				img = face_recognition.load_image_file(file_url)
 				encodings = face_recognition.face_encodings(img)
