@@ -101,7 +101,7 @@ class FaceRecognitionService(object):
 
 		result = pool.starmap(self.test_image, function_parameters, chunksize=50)
 		pool.close()
-		pool.terminate()
 		pool.join()
+		pool.terminate()
 
 		return result
