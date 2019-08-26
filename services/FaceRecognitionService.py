@@ -87,7 +87,10 @@ class FaceRecognitionService(object):
 
 	def process_images_in_process_pool(self, images_to_check, known_face_encodings):
 		print('Process image: ', images_to_check)
-		processes = multiprocessing.cpu_count() - 1
+		cpu_count = multiprocessing.cpu_count()
+		print('>>>>>>> CPU count', str(cpu_count))
+		processes = cpu_count // 2
+		print('>>>>>>> Processes count', str(processes))
 
 		# macOS will crash due to a bug in libdispatch if you don't use 'forkserver'
 		context = multiprocessing.get_context('spawn')
