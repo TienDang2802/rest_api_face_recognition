@@ -40,7 +40,11 @@ class FaceRecognitionService(object):
 				if not os.path.exists(file_url):
 					print('>>>>>> File not exists: ', file_url)
 					continue
-				img = face_recognition.load_image_file(file_url)
+				try:
+					img = face_recognition.load_image_file(file_url)
+				except (OSError, RuntimeError) as err:
+					print("===> OSError scan_known_people:", err)
+					continue
 				encodings = face_recognition.face_encodings(img)
 
 				if len(encodings) == 0:

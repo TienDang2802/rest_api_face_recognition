@@ -84,7 +84,7 @@ class DownloadImageService(object):
 			print('>>> File not found:' + directory_img)
 			print(err)  # something wrong with local path
 			return None
-		except (HTTPError, URLError, Conten) as err:
+		except (HTTPError, URLError) as err:
 			print('>>> Download img error:' + image_url)
 			print(err)  # something wrong with url
 			return None

@@ -47,7 +47,7 @@ def post():
 	des_directory = process_directory + '/' + DIR_NAME_DES
 	des = _do_download(data['des'], des_directory, redis_client)
 
-	time.sleep(0.25)
+	time.sleep(0.125)
 	face_recognition_service = FaceRecognitionService()
 	data = face_recognition_service.process_face_recognition(src, des, redis_client)
 
