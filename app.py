@@ -22,9 +22,9 @@ redis_port = os.getenv("CNF_REDIS_PORT")
 redis_password = os.getenv("CNF_REDIS_PASS")
 
 
-def _do_download(img_data, img_directory, redis_client, is_check_tag=False):
+def _do_download(img_data, img_directory, is_check_tag=False):
 	os.makedirs(img_directory)
-	download_image_src = DownloadImageService(img_directory, redis_client, is_check_tag)
+	download_image_src = DownloadImageService(img_directory, is_check_tag)
 	return download_image_src.do_download(img_data)
 
 
@@ -41,10 +41,10 @@ def post():
 	redis_client = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
 
 	src_directory = process_directory + '/' + DIR_NAME_SRC
-	src = _do_download(data['src'], src_directory, redis_client, True)
+	src = _do_download(data['src'], src_directory, True)
 
 	des_directory = process_directory + '/' + DIR_NAME_DES
-	des = _do_download(data['des'], des_directory, redis_client)
+	des = _do_download(data['des'], des_directory)
 
 	face_recognition_service = FaceRecognitionService()
 	data = face_recognition_service.process_face_recognition(src, des, redis_client)
