@@ -31,6 +31,10 @@ class DownloadImageService(object):
 		pool = multiprocessing.Pool(multiprocessing.cpu_count())
 		result = pool.map(self.download_image, uris)
 
+		pool.close()
+		pool.join()
+		pool.terminate()
+
 		return list(filter(None, result))
 
 	def download_image(self, image_url):
