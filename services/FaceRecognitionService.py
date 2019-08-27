@@ -1,5 +1,8 @@
 import os
 import pickle
+import random
+import time
+
 import face_recognition
 import multiprocessing
 import itertools
@@ -30,6 +33,7 @@ class FaceRecognitionService(object):
 		known_face_encodings = []
 
 		for file_url in file_urls:
+			tmp = 0
 			if isinstance(file_url, bytes):
 				file_url = file_url.decode("utf-8")
 			img_name = os.path.basename(file_url)
@@ -38,9 +42,12 @@ class FaceRecognitionService(object):
 				known_face_encodings.append(encodings_cache)
 			else:
 				file_url = os.path.abspath("./{}".format(file_url))
-				if not os.path.exists(file_url):
-					print('>>>>>> File not exists: ', file_url)
-					continue
+				while not os.path.exists(file_url) or tmp < 5:
+					time_sleep = random.random() / 4
+					time.sleep(time_sleep)  # simulate work
+					print('Sleep: ', str(time_sleep))
+					print('>>>>>> File not exists. Try again ', file_url)
+					tmp += 1
 				try:
 					img = face_recognition.load_image_file(file_url)
 				except (OSError, RuntimeError) as err:
@@ -58,6 +65,7 @@ class FaceRecognitionService(object):
 						continue
 					if len(encodings) == 0:
 						print("WARNING: No faces found in {}. Ignoring file.".format(file_url))
+						continue
 					else:
 						known_face_encodings.append(encodings[0])
 				else:

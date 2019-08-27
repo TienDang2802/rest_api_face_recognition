@@ -1,8 +1,6 @@
 import multiprocessing
 import os
 import hashlib
-import random
-import time
 import urllib.request
 from urllib.error import HTTPError, URLError
 from os.path import basename
@@ -78,7 +76,6 @@ class DownloadImageService(object):
 				directory_img = self.img_directory + '/' + img_name
 
 			urllib.request.urlretrieve(image_url, directory_img)
-			time.sleep(random.random() / 4)  # simulate work
 
 			return directory_img
 		except FileNotFoundError as err:
