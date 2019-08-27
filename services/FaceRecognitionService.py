@@ -3,12 +3,14 @@ import pickle
 import face_recognition
 import multiprocessing
 import itertools
-from PIL import Image
+from PIL import Image, ImageFile
 import numpy as np
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
 cache_ttl = os.getenv("CACHE_TTL")
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class FaceRecognitionService(object):
