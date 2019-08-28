@@ -75,7 +75,11 @@ class DownloadImageService(object):
 				img_name = img.split('?')[0]
 				directory_img = self.img_directory + '/' + img_name
 
-			urllib.request.urlretrieve(image_url, directory_img)
+			try:
+				urllib.request.urlretrieve(image_url, directory_img)
+			except urllib.error.ContentTooShortError:
+				print('Network conditions is not good. Reloading...')
+				urllib.request.urlretrieve(image_url, directory_img)
 
 			return directory_img
 		except FileNotFoundError as err:
