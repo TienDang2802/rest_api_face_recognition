@@ -42,12 +42,18 @@ class FaceRecognitionService(object):
 				known_face_encodings.append(encodings_cache)
 			else:
 				file_url = os.path.abspath("./{}".format(file_url))
-				while not os.path.exists(file_url) or tmp < 5:
+				while not os.path.exists(file_url):
+					if tmp >= 3:
+						break
 					time_sleep = random.random() / 4
 					time.sleep(time_sleep)  # simulate work
-					print('Sleep: ', str(time_sleep))
+					print('Sleep: {}. Tmp: {}'.format(str(time_sleep), str(tmp)))
 					print('>>>>>> File not exists. Try again ', file_url)
 					tmp += 1
+
+				if not os.path.exists(file_url):
+					print('>>>>>> File not exists.Skipped', file_url)
+					continue
 				try:
 					img = face_recognition.load_image_file(file_url)
 				except (OSError, RuntimeError) as err:
