@@ -39,6 +39,7 @@ class FaceRecognitionService(object):
 			img_name = os.path.basename(file_url)
 			if redis_client.exists(img_name):
 				encodings_cache = pickle.loads(redis_client.get(img_name))
+				print('>>> Load from cache: ', file_url)
 				known_face_encodings.append(encodings_cache)
 			else:
 				file_url = os.path.abspath("./{}".format(file_url))
@@ -47,12 +48,10 @@ class FaceRecognitionService(object):
 						break
 					time_sleep = random.random() / 4
 					time.sleep(time_sleep)  # simulate work
-					print('Sleep: {}. Tmp: {}'.format(str(time_sleep), str(tmp)))
-					print('>>>>>> File not exists. Try again ', file_url)
+					print('Sleep: {}. Tmp: {}. File {} not exists'.format(str(time_sleep), str(tmp), file_url))
 					tmp += 1
-
 				if not os.path.exists(file_url):
-					print('>>>>>> File not exists.Skipped', file_url)
+					print('>>>>>> File not exists. Skipped', file_url)
 					continue
 				try:
 					img = face_recognition.load_image_file(file_url)
@@ -70,7 +69,7 @@ class FaceRecognitionService(object):
 						print("===> No faces found in {}".format(file_url))
 						continue
 					if len(encodings) == 0:
-						print("WARNING: No faces found in {}. Ignoring file.".format(file_url))
+						print("===> WARNING: No faces found in {}. Ignoring file.".format(file_url))
 						continue
 					else:
 						known_face_encodings.append(encodings[0])
